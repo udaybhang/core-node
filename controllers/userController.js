@@ -1,6 +1,9 @@
 const joi = require('joi');
 const User = require('../modals/user');
 const md5 = require('md5');
+const sk = "";
+const stripe = require('stripe')(sk);
+
 exports.signup = async (req, res) => {
     const schema = joi.object().keys({
         firstname: joi.string().required().error(e => "firstname is required"),
@@ -80,6 +83,88 @@ exports.userUpdate = async(req, res) =>{
     })
    }
   }
+exports.success_url = async (req, res)=>{
+    console.log(res.body)
+    res.status(200).json({
+        message:"Success url!",
+        data: res.body
+    })
+}
+exports.cancel_url = async (req, res)=>{
+    console.log(res.body)
+    res.status(200).json({
+        message:"Cancel url!",
+        data: res.body
+    })
+}
+exports.retreavePaymentIntent = async(req, res)=>{
+    let {p_in} = req.body
+    // found client secreat in response
+    const paymentIntent = await stripe.paymentIntents.retrieve(p_in);
+    res.status(200).json({
+        message:"Payment Intent!",
+        data: paymentIntent
+    })
+}
+exports.charge = async(req, res)=>{
+    let {token_id} = req.body
+    // found client secreat in response
+    const charge = await stripe.charges.create({
+        amount: 50,
+        currency: 'usd',
+        source: token_id,
+        description: 'My First Test Charge (created for API docs at https://www.stripe.com/docs/api)',
+      });
+    res.status(200).json({
+        message:"Payment Intent!",
+        data: charge
+    })
+}
+  exports.checkout = async(req, res)=> {
+    const session = await stripe.checkout.sessions.create({
+        submit_type: 'pay',
+        payment_method_types: ['card'],
+        line_items: [{
+            price_data: {
+                currency: "INR",
+                unit_amount: 130,
+                product_data: { name: "Basketball", description: "play ground" }
+            },
+            quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: 'http://localhost:3000/success_url',
+        cancel_url: 'http://localhost:3000/cancel_url'
+      });
+        res.status(200).json({
+          message:"Success!",
+          data: session
+      })
+  };
+
+  exports.token = async(req, res)=> {
+    const token = await stripe.tokens.create({
+        card: {
+          number: '4242424242424242',
+          exp_month: 7,
+          exp_year: 2023,
+          cvc: '314',
+        },
+      });
+        res.status(200).json({
+          message:"Success!",
+          data: token
+      })
+  };
+
+  exports.create = async(req, res)=> {
+      let pk = "";
+      let cusData = await stripe.customers.create({email: "uexefm@gmail.com", name: "Amrita", address: { line1: "Fakrabad" }, metadata: { email: "uexefm@gmail.com" } });
+        res.status(200).json({
+          message:"Success!",
+          data: cusData
+      })
+  };
 
   exports.searchUser = async(req, res)=>{
     
